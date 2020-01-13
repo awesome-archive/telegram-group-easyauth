@@ -11,22 +11,29 @@ START: 🍥请将我设定为管理员以使用验证功能！🍥
 
 GREET: |
   欢迎加入 神楽めあ/Kagura Mea Group！
-  题目：%s
-  请在 %ds 内点击按钮选择答案：
+  题目：{question}
+  请在 {time} 秒内点击按钮选择答案：
 
 #反馈
 SUCCESS: 验证成功！
 
-RETRY: 验证失败，请在 %ds 后重试！
+RETRY: 验证失败，请在 {time} 秒后重试！
 
 #通过
-PASS: 验证通过，请仔细阅读群组公告和置顶后参与讨论！
+PASS: |
+  {user} 验证通过，请仔细阅读群组公告和置顶后参与讨论！
 
 #未通过、无权限
-NOT_KICK: 验证失败，请管理员多加留意！
+NOT_KICK: |
+  {user} 验证失败，请管理员多加留意！
+  验证问题：{question}
+  回答：{ans}
 
 #未通过、踢出
-KICK: 验证失败，已被移出群组！
+KICK: |
+  {user} 验证失败，已被移出群组！
+  验证问题：{question}
+  回答：{ans}
 
 #按钮文字、通过
 PASS_BTN: 放行
@@ -35,10 +42,12 @@ PASS_BTN: 放行
 KICK_BTN: 踢出
 
 #管理员行为、通过
-ADMIN_PASS: 通过管理员放行。
+ADMIN_PASS: |
+  {user} 通过管理员 {admin} 放行。
 
 #管理员行为、踢出
-ADMIN_KICK: 被管理员踢出。
+ADMIN_KICK: |
+  {user} 被管理员 {admin} 踢出。
 
 #群友手贱
 OTHER: 请勿点击不相干的按钮。
@@ -105,7 +114,7 @@ CHALLENGE:
       - '@Kagura_mea'
       - '@Lich_King'
       - '@Kagura_aqua'
-  - QUESTION: 请问 Meu 的是？
+  - QUESTION: 请问 Meu 是？
     ANSWER: mea妹妹
     WRONG:
       - mea姐姐
@@ -114,7 +123,7 @@ CHALLENGE:
       - mea外甥
   - QUESTION: KaguraMea 曾隶属于那个企划？
     ANSWER: パリィ プロ ぱりぷろ
-    WRONG: 
+    WRONG:
       - ホロライブ 一期生
       - あにまーれ 编外
       - にじさんじ
@@ -127,25 +136,25 @@ CHALLENGE:
       - 她也记不太清楚
   - QUESTION: KaguraMea 的妹妹是？
     ANSWER: 神楽めう
-    WRONG: 
+    WRONG:
       - 神楽なな
       - 神楽れい
       - 神楽彩
       - 神楽みう
-  - QUSETION: KaguraMea是从什么时候开始活动的？
+  - QUESTION: KaguraMea是从什么时候开始活动的？
     ANSWER: 2018/06/28
     WRONG:
       - 2018/12/01
       - 2018/08/06
       - 2018/12/1
       - 2018/12/24
-  - QUSETION: Freeze_Mea Twitter账号是哪一天被冻结的？
-    ANSWER: 2018/05/14
+  - QUESTION: Freeze_Mea Twitter账号是哪一天被冻结的？
+    ANSWER: 2019/05/14
     WRONG:
-      - 2018/04/28
-      - 2018/05/25
-      - 2018/05/24
-  - QUSETION: KaguraMea 喜欢μ's里的哪一位idol?
+      - 2019/04/28
+      - 2019/05/25
+      - 2019/05/24
+  - QUESTION: KaguraMea 喜欢μ's里的哪一位idol?
     ANSWER: 矢澤 にこ
     WRONG:
       - 南 ことり
@@ -156,9 +165,105 @@ CHALLENGE:
       - 星空 凛
       - 小泉 花陽
       - 東條 希
-  - QUSETION: KaguraMea 什么时候首次突击主播？
+  - QUESTION: KaguraMea 什么时候首次突击主播？
     ANSWER: 2018/07/13
     WRONG:
       - 2018/11/23
       - 2018/7/10
       - 2018/7/4
+  - QUESTION: Mea 第一次B站限定自我介绍视频是什么时候发的？
+    ANSWER: 2018年7月17日
+    WRONG:
+      - 2018年7月13日
+      - 2018年7月4日
+      - 2018年8月2日
+  - QUESTION:  神楽めあ的原创歌曲(すとろべりぃ♡こんふぃちゅ～る)里一共出现了多少次草莓果酱？
+    ANSWER: 3回
+    WRONG: 
+      - 2回
+      - 4回
+      - 5回
+  - QUESTION: 神楽めあ出道以来第一次联动的对象是谁？
+    ANSWER: 歌衣イツミ
+    WRONG: 
+      - 織田信姫
+      - 卯月コウ
+      - 神楽彩
+  - QUESTION: 和神楽めあ联动次数最多的Vtuber是谁？
+    ANSWER: 日ノ隈らん
+    WRONG:
+      - 湊あくあ
+      - 犬山たまき
+      - 因幡はねる
+  - QUESTION: 2019/05/08 令和第一起事件神楽めあ丢钱包，掉了多少现金？
+    ANSWER: 31K円
+    WRONG:
+      - 20K円
+      - 25K円
+      - 115114円
+  - QUESTION: 神楽めあ的羽织和帽子分别有多重？
+    ANSWER: 羽织20KG 帽子40KG
+    WRONG:
+      - 羽织80KG 帽子25KG
+      - 羽织20KG 帽子10KG
+      - 羽织80KG 帽子40KG
+  - QUESTION: 神楽めあ在学生时代喜欢一下哪一门科目？
+    ANSWER: 国語
+    WRONG:
+      - 体育
+      - 数学
+      - 社会
+  - QUESTION: 神楽めあ在两次憋尿俄罗斯方块里共喝了几次水呢？
+    ANSWER: 8回
+    WRONG:
+      - 4回
+      - 6回
+      - 10回
+  - QUESTION: 神楽めあ的第一首原创曲里一共出现了多少次草莓果酱？
+    ANSWER: 3回
+    WRONG:
+      - 114514回
+      - 2回
+      - 4回
+      - 5回
+  - QUESTION: 神楽めあ的出道日期？
+    ANSWER: 2018-06-28
+    WRONG:
+      - 2018-12-24
+      - 2018-06-01
+      - 2018-09-11
+      - 2018-05-20
+  - QUESTION: 神楽めあ的生日？
+    ANSWER: 08-02
+    WRONG:
+      - 06-01
+      - 08-21
+      - 12-01
+      - 每个月27号
+  - QUESTION: 神楽めあ的国家的首都是在那里？
+    ANSWER: 巴黎
+    WRONG:
+      - 柏林
+      - 温哥华
+      - 埃菲尔塔
+      - 伊斯坦布尔
+      - 凯旋门
+      - 伦敦
+  - QUESTION: 除了流星，神楽めあ还有以下哪个男友？
+    ANSWER: 隼人
+    WRONG:
+      - 智
+      - 勇
+      - 流星
+  - QUESTION: 神楽めあ第一次举行线下live的日期？
+    ANSWER: 2019-04-14
+    WRONG:
+      - 2019-07-14
+      - 2019-06-21
+      - 2019-05-20
+  - QUESTION: 神楽めあ发布的第一首翻唱曲是什么？
+    ANSWER: 《BEAST DANCE》
+    WRONG:
+      - 《Connect/コネクト》
+      - 《爱言叶III》
+      - 《Flamingo》

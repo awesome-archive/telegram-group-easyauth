@@ -7,7 +7,7 @@ import sys
 from datetime import datetime
 from hashlib import blake2b
 
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, ChatPermissions
 from telegram.error import BadRequest
 from telegram.ext import (CallbackQueryHandler, CommandHandler, Filters,
                           MessageHandler, Updater)
@@ -36,8 +36,14 @@ else:
         logger.exception("Cannot find config.yml.")
         sys.exit(1)
 
-queue = {}
+for flag in config['CHALLENGE']:
+    digest_size = len(flag['WRONG'])
+    flag['wrong'] = []
+    for t in range(digest_size):
+        flag['wrong'].append(blake2b(str(flag['WRONG'][t]).encode(), digest_size=digest_size).hexdigest())
+    flag['answer'] = blake2b(str(flag['ANSWER']).encode(), digest_size=digest_size).hexdigest()
 
+queue = {}
 
 @run_async
 def start(update, context):
@@ -76,7 +82,8 @@ def newmem(update, context):
     chat = update.message.chat
     from_user = update.message.from_user
     new_chat_members = update.message.new_chat_members
-    flag = random.randint(0, len(config['CHALLENGE']) - 1)
+    num = random.randint(0, len(config['CHALLENGE']) - 1)
+    flag = config['CHALLENGE'][num]
     if from_user.id not in [admin.user.id for admin in context.bot.get_chat_administrators(chat.id)]:
         for user in new_chat_members:
             if not user.is_bot:
@@ -84,22 +91,19 @@ def newmem(update, context):
                     context.bot.restrict_chat_member(
                         chat_id=chat.id,
                         user_id=user.id,
-                        can_send_messages=False,
-                        can_send_media_messages=False,
-                        can_send_other_messages=False,
-                        can_add_web_page_previews=False
+                        permissions=ChatPermissions(can_send_messages=False)
                     )
                 except BadRequest:
                     logger.warning(
                         f"Not enough rights to restrict chat member {chat.id} at group {user.id}")
                 buttons = [[InlineKeyboardButton(
-                    text=config['CHALLENGE'][flag]['ANSWER'],
-                    callback_data=f"challenge|{user.id}|{flag}|{blake2b(config['CHALLENGE'][flag]['ANSWER'].encode(),digest_size=4).hexdigest()}"
+                    text=flag['ANSWER'],
+                    callback_data=f"challenge|{user.id}|{num}|{flag['answer']}"
                 )]]
-                for t in config['CHALLENGE'][flag]['WRONG']:
+                for t in range(len(flag['WRONG'])):
                     buttons.append([InlineKeyboardButton(
-                        text=t,
-                        callback_data=f"challenge|{user.id}|{flag}|{blake2b(t.encode(),digest_size=4).hexdigest()}")]
+                        text=flag['WRONG'][t],
+                        callback_data=f"challenge|{user.id}|{num}|{flag['wrong'][t]}")]
                     )
                 random.shuffle(buttons)
                 buttons.append([InlineKeyboardButton(
@@ -109,7 +113,7 @@ def newmem(update, context):
                     text=config['KICK_BTN'],
                     callback_data=f"admin|kick|{user.id}")]
                 )
-                msg = update.message.reply_text(config['GREET'] % (config['CHALLENGE'][flag]['QUESTION'], config['TIME']),
+                msg = update.message.reply_text(config['GREET'].format(question=flag['QUESTION'], time=config['TIME']),
                                                 reply_markup=InlineKeyboardMarkup(buttons))
                 queue[f'{chat.id}{user.id}kick'] = updater.job_queue.run_once(
                     kick, config['TIME'], context=f"{chat.id}|{user.id}")
@@ -126,14 +130,14 @@ def query(update, context):
     chat = message.chat
     data = update.callback_query.data.split('|')
     if user.id == int(data[1]):
-        if data[3] == blake2b(config['CHALLENGE'][int(data[2])]['ANSWER'].encode(), digest_size=4).hexdigest():
+        if data[3] == config['CHALLENGE'][int(data[2])]['answer']:
             context.bot.answer_callback_query(
                 text=config['SUCCESS'],
                 show_alert=False,
                 callback_query_id=update.callback_query.id
             )
             context.bot.edit_message_text(
-                text=f"[{user.first_name}](tg://user?id={user.id}) {config['PASS']}",
+                text=config['PASS'].format(user=f"[{user.first_name}](tg://user?id={user.id})"),
                 message_id=message.message_id,
                 chat_id=chat.id, parse_mode='Markdown'
             )
@@ -141,10 +145,7 @@ def query(update, context):
                 context.bot.restrict_chat_member(
                     chat_id=chat.id,
                     user_id=user.id,
-                    can_send_messages=True,
-                    can_send_media_messages=True,
-                    can_send_other_messages=True,
-                    can_add_web_page_previews=True
+                    permissions=ChatPermissions(can_send_messages=True, can_send_media_messages=True, can_send_polls=True, can_send_other_messages=True, can_add_web_page_previews=True, can_change_info=True, can_invite_users=True, can_pin_messages=True)
                 )
             except BadRequest:
                 logger.warning(
@@ -152,26 +153,26 @@ def query(update, context):
             queue[f'{chat.id}{user.id}clean1'].schedule_removal()
         else:
             context.bot.answer_callback_query(
-                text=config['RETRY'] % config['BANTIME'],
+                text=config['RETRY'].format(time=config['BANTIME']),
                 show_alert=True,
                 callback_query_id=update.callback_query.id
             )
-            for t in config['CHALLENGE'][int(data[2])]['WRONG']:
-                if blake2b(t.encode(), digest_size=4).hexdigest() == data[3]:
-                    ans = t
+            for t in range(len(config['CHALLENGE'][int(data[2])]['wrong'])):
+                if config['CHALLENGE'][int(data[2])]['wrong'][t] == data[3]:
+                    ans = config['CHALLENGE'][int(data[2])]['WRONG'][t]
             try:
                 context.bot.kick_chat_member(chat_id=chat.id, user_id=user.id,
                                              until_date=datetime.timestamp(datetime.today()) + config['BANTIME'])
             except BadRequest:
                 context.bot.edit_message_text(
-                    text=f"[{user.first_name}](tg://user?id={user.id}) {config['NOT_KICK']}\n{config['CHALLENGE'][int(data[2])]['QUESTION']}: {ans}",
+                    text=config['NOT_KICK'].format(user=f"[{user.first_name}](tg://user?id={user.id})" ,question=config['CHALLENGE'][int(data[2])]['QUESTION'], ans=ans),
                     message_id=message.message_id,
                     chat_id=chat.id, parse_mode='Markdown')
                 logger.warning(
                     f"Not enough rights to kick chat member {chat.id} at group {user.id}")
             else:
                 context.bot.edit_message_text(
-                    text=f"[{user.first_name}](tg://user?id={user.id}) {config['KICK']}\n{config['CHALLENGE'][int(data[2])]['QUESTION']}: {ans}",
+                    text=config['KICK'].format(user=f"[{user.first_name}](tg://user?id={user.id})", question=config['CHALLENGE'][int(data[2])]['QUESTION'], ans=ans),
                     message_id=message.message_id,
                     chat_id=chat.id, parse_mode='Markdown')
         queue[f'{chat.id}{user.id}kick'].schedule_removal()
@@ -189,9 +190,9 @@ def admin(update, context):
     if data[1] == 'pass':
         if user.id in [admin.user.id for admin in context.bot.get_chat_administrators(chat.id)]:
             context.bot.answer_callback_query(
-                text=config['ADMIN_PASS'], show_alert=False, callback_query_id=update.callback_query.id)
+                text=config['PASS_BTN'], show_alert=False, callback_query_id=update.callback_query.id)
             context.bot.edit_message_text(
-                text=f"[{user.first_name}](tg://user?id={user.id}): [{data[2]}](tg://user?id={data[2]}) {config['ADMIN_PASS']}",
+                text=config['ADMIN_PASS'].format(admin=f"[{user.first_name}](tg://user?id={user.id})", user=f"[{data[2]}](tg://user?id={data[2]})"),
                 message_id=message.message_id,
                 chat_id=chat.id, parse_mode='Markdown'
             )
@@ -199,10 +200,7 @@ def admin(update, context):
                 context.bot.restrict_chat_member(
                     chat_id=chat.id,
                     user_id=int(data[2]),
-                    can_send_messages=True,
-                    can_send_media_messages=True,
-                    can_send_other_messages=True,
-                    can_add_web_page_previews=True
+                    permissions=ChatPermissions(can_send_messages=True, can_send_media_messages=True, can_send_polls=True, can_send_other_messages=True, can_add_web_page_previews=True, can_change_info=True, can_invite_users=True, can_pin_messages=True)
                 )
             except BadRequest:
                 logger.warning(
@@ -215,9 +213,9 @@ def admin(update, context):
     elif data[1] == 'kick':
         if user.id in [admin.user.id for admin in context.bot.get_chat_administrators(chat.id)]:
             context.bot.answer_callback_query(
-                text=config['ADMIN_KICK'], show_alert=False, callback_query_id=update.callback_query.id)
+                text=config['KICK_BTN'], show_alert=False, callback_query_id=update.callback_query.id)
             context.bot.edit_message_text(
-                text=f"[{user.first_name}](tg://user?id={user.id}): [{data[2]}](tg://user?id={data[2]}) {config['ADMIN_KICK']}",
+                text=config['ADMIN_KICK'].format(admin=f"[{user.first_name}](tg://user?id={user.id})", user=f"[{data[2]}](tg://user?id={data[2]})"),
                 message_id=message.message_id,
                 chat_id=chat.id, parse_mode='Markdown'
             )
